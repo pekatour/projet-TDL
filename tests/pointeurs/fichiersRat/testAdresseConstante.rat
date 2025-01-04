@@ -1,0 +1,6 @@
+main{
+    int * x = (new int);
+    const c = 3;
+    x = & c;
+    (*x) = 4;
+}

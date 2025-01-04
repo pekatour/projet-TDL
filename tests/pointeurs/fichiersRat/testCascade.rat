@@ -1,0 +1,8 @@
+main{
+    int c = 3;
+    int * y = &c;
+    int * * x = & y;
+    (* (*x)) = 2;
+    int z = (* (*x));
+    print z;
+}
