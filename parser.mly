@@ -59,7 +59,7 @@ main : lfi=prog EOF     {lfi}
 
 prog : lv=var* lf=fonc* ID li=bloc  {Programme (lv,lf,li)}
 
-var : STATIC t=typ n=ID EQUAL e1=e {Declaration (t,n,e1)}
+var : STATIC t=typ n=ID EQUAL e1=e PV {Declaration (t,n,e1)}
 
 fonc : t=typ n=ID PO lp=separated_list(VIRG,param) PF li=bloc {Fonction(t,n,lp,li)}
 

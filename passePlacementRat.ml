@@ -84,7 +84,12 @@ end
 (* Vérifie la bonne utilisation des identifiants et transforme le programme
 en un programme de type AstPlacement.programme *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let analyser (AstType.Programme (fonctions,prog)) =
+let analyser (AstType.Programme (varGlobales,fonctions,prog)) =
+  let nv,top = List.fold_left (fun resq x -> let appel = analyse_placement_instruction x (snd resq) "SB" in
+                                              (appel:: (fst resq), snd resq + snd appel)) 
+                              ([],0)
+                              varGlobales
+                               in
   let nf = List.map analyse_placement_fonction fonctions in
-  let nb = analyse_placement_bloc prog 0 "SB" in 
-  AstPlacement.Programme(nf,nb)
+  let nb = analyse_placement_bloc prog top "SB" in 
+  AstPlacement.Programme((List.map fst nv, top),nf,nb)

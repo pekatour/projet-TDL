@@ -75,7 +75,7 @@ type fonction = Fonction of typ * string * (typ * string) list * bloc
 
 (* Structure d'un programme Rat *)
 (* liste de fonction - programme principal *)
-type programme = Programme of instruction list * fonction list * bloc
+type programme = Programme of bloc * fonction list * bloc
 
 end
 
@@ -127,7 +127,7 @@ struct
   type fonction = Fonction of typ * Tds.info_ast * (typ * Tds.info_ast ) list * bloc
 
   (* Structure d'un programme dans notre langage *)
-  type programme = Programme of instruction list * fonction list * bloc
+  type programme = Programme of bloc * fonction list * bloc
 
 end
 
@@ -183,7 +183,7 @@ type bloc = instruction list
 type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
 
 (* Structure d'un programme dans notre langage *)
-type programme = Programme of instruction list * fonction list * bloc
+type programme = Programme of bloc * fonction list * bloc
 
 end
 
@@ -218,6 +218,6 @@ type bloc = instruction list * int (* taille du bloc *)
 type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
 
 (* Structure d'un programme dans notre langage *)
-type programme = Programme of instruction list * fonction list * bloc
+type programme = Programme of bloc * fonction list * bloc
 
 end

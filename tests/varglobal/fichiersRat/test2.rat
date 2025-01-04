@@ -1,0 +1,10 @@
+static int a = 3;
+
+int add (int b){
+  return (a+b);
+}
+
+test{
+  const x = 3;
+  int z = (x+1);
+}

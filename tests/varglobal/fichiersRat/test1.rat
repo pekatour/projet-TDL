@@ -1,0 +1,6 @@
+static rat z = [2/3];
+
+test{
+  int x = denom z;
+  print x;
+}

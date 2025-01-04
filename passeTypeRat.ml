@@ -174,7 +174,8 @@ end
 (* Vérifie la bonne utilisation des identifiants et transforme le programme
 en un programme de type AstType.programme *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let analyser (AstTds.Programme (fonctions,prog)) =
+let analyser (AstTds.Programme (varGlobales,fonctions,prog)) =
+  let nv = List.map analyse_type_instruction varGlobales in
   let nf = List.map analyse_type_fonction fonctions in
   let nb = analyse_type_bloc prog in 
-  AstType.Programme(nf,nb)
+  AstType.Programme(nv,nf,nb)

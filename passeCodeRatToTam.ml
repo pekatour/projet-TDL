@@ -153,6 +153,11 @@ and analyse_code_bloc li taille = match li with
       | [] -> pop 0 taille
       | t::q -> let si = analyse_code_instruction t in 
         let sq = analyse_code_bloc q taille in si ^ sq
+
+and analyse_code_varglobales li = match li with
+      | [] -> ""
+      | t::q -> let si = analyse_code_instruction t in 
+        let sq = analyse_code_varglobales q in si ^ sq
   
 (* analyse_code_fonction : type -> AstPlacement.fonction -> string.fonction *)
 let analyse_code_fonction (AstPlacement.Fonction(info,_,(li,taille)))  =
@@ -168,8 +173,9 @@ end
 (* Vérifie la bonne utilisation des identifiants et transforme le programme
 en un programme de type string.programme *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let analyser (AstPlacement.Programme (fonctions,prog)) =
+let analyser (AstPlacement.Programme (varGlobales,fonctions,prog)) =
   let entete = getEntete () in
+  let sv = analyse_code_varglobales (fst varGlobales) in
   let sf = List.fold_right (fun x resq -> analyse_code_fonction x ^ resq) fonctions "" in
-  let sb = analyse_code_bloc (fst prog) (snd prog) in entete ^ sf ^ label "main" ^ sb ^ halt
+  let sb = analyse_code_bloc (fst prog) (snd prog) in sv ^ entete ^ sf ^ label "main" ^ sb ^ pop 0 (snd varGlobales) ^ halt
   

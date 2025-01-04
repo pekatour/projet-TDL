@@ -1,12 +1,12 @@
 (* Interface définissant une passe *)
 module type Passe =
-sig 
+sig
   (* type des AST en entrée de la passe *)
   type t1
   (* type des AST en sortie de la passe *)
   type t2
 
-  (* fonction d'analyse qui tranforme un AST de type t1 
+  (* fonction d'analyse qui tranforme un AST de type t1
   en un AST de type t2 en réalisant des vérifications *)
   val analyser : t1 -> t2
 end
@@ -43,7 +43,7 @@ struct
   type t1 = Ast.AstType.programme
   type t2 = Ast.AstPlacement.programme
 
-  let analyser _ = Ast.AstPlacement.Programme([],[],([],0))
+  let analyser _ = Ast.AstPlacement.Programme(([],0),[],([],0))
 
 end
 
@@ -68,9 +68,9 @@ struct
 
 
   (* Renvoie l'adresse d'une variable dans le cas d'une déclaration *)
-  let rec analyser_instruction i = 
+  let rec analyser_instruction i =
     match i with
-    | Ast.AstPlacement.Declaration (info,_) -> 
+    | Ast.AstPlacement.Declaration (info,_) ->
       begin
         match Tds.info_ast_to_info info with
         | InfoVar (n,_,d,r) -> [(n,(d,r))]
@@ -78,7 +78,7 @@ struct
         end
     | Ast.AstPlacement.Conditionnelle(_,(bt,_),(be,_)) -> (List.flatten (List.map (analyser_instruction) bt))@(List.flatten (List.map (analyser_instruction) be))
     | Ast.AstPlacement.TantQue (_,(b,_)) -> (List.flatten (List.map (analyser_instruction) b))
-    | _ -> [] 
+    | _ -> []
 
 
 let analyser_param info =
@@ -97,7 +97,7 @@ let analyser_param info =
 
   (* Renvoie la suite des adresses des variables déclarées dans les fonctions et dans le programme principal *)
   let analyser (Ast.AstPlacement.Programme (varGlobales, fonctions, (prog,_))) =
-    let res0 = ("main", List.flatten (List.map (analyser_instruction) prog))::(List.flatten (List.map (analyser_fonction) fonctions)) in
-    res0@[("varGlobales",List.flatten (List.map (analyser_instruction) varGlobales))]
+    let res0 = ("main", List.flatten (List.map (analyser_instruction) prog))::(List.flatten (List.map (analyser_fonction) fonctions)) in 
+    res0@[("varGlobales",List.flatten (List.map (analyser_instruction) (fst varGlobales)))]
 
 end
