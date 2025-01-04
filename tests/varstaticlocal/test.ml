@@ -62,30 +62,15 @@ let test fichier fonction (var,occ) (dep,registre) =
 (** Chemin d'accès aux fichiers de test *)
 (****************************************)
 
-let pathFichiersRat = "../../../../tests/varglobal/fichiersRat/"
+let pathFichiersRat = "../../../../tests/varstaticlocal/fichiersRat/"
 
 (**********)
 (*  TESTS *)
 (**********)
 
-let%test_unit "test1" = 
- let _ = compiler (pathFichiersRat^"test1.rat") in ()
+let%test "testplacement" = 
+ test (pathFichiersRat^"test1.rat")  "f" ("i",1)  (0,"SB")
 
-let%test_unit "test2" = 
- let _ = compiler (pathFichiersRat^"test2.rat") in ()
-
-let%test_unit "test3" = 
- let _ = compiler (pathFichiersRat^"test3.rat") in ()
-
-let%test "test3_placementa" = 
- test (pathFichiersRat^"test3.rat")  "varGlobales" ("a",1)  (0,"SB")
-
-let%test "test3_placementb" = 
- test (pathFichiersRat^"test3.rat")  "varGlobales" ("b",1)  (1,"SB")
-
-let%test "test3_placementz" = 
- test (pathFichiersRat^"test3.rat")  "main" ("z",1)  (2,"SB")
-
-let%expect_test "testTAM" = 
- runtam (pathFichiersRat^"test4.rat");
- [%expect{| 13574 |}]
+(* let%expect_test "testTAM" = 
+ runtam (pathFichiersRat^"test1.rat");
+ [%expect{| 1234 |}] *)

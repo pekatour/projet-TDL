@@ -19,7 +19,8 @@ let rec analyse_code_affectable a modif =
   | AstType.Ident info -> 
     begin
       match info_ast_to_info info with
-        | InfoVar ( _,_,t,dep,reg) -> (if modif then store else load) (getTaille t) dep reg
+        | InfoVar ( false,_,t,dep,reg) -> (if modif then store else load) (getTaille t) dep reg
+        | InfoVar ( true,_,t,dep,reg) -> load 1 dep reg ^ (if modif then storei else loadi) (getTaille t)
         | InfoConst(_,v) -> loadl_int v
         | _ -> failwith "impossible"
     end
@@ -31,7 +32,8 @@ let rec analyse_code_affectable a modif =
     | AstType.Ident info -> 
       begin
         match info_ast_to_info info with
-          | InfoVar ( _,_,t,_,_) -> getTaille t
+          | InfoVar ( false,_,t,_,_) -> getTaille t
+          | InfoVar ( true,_,_,_,_) -> 1
           | _ -> failwith "impossible"
       end
     | AstType.Deref _ -> 1

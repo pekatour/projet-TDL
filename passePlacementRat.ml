@@ -21,8 +21,9 @@ let rec analyse_placement_instruction i depl reg =
   | AstType.Declaration (info, e) ->
       begin
        match info_ast_to_info info with
-        | InfoVar ( _,_,t,_,_) -> modifier_adresse_variable depl reg info;
+        | InfoVar ( false,_,t,_,_) -> modifier_adresse_variable depl reg info;
           (AstPlacement.Declaration(info,e),getTaille t)
+        | InfoVar ( true,_,_,_,_) -> (AstPlacement.Declaration(info,e),0) (*Une variable statique locale à une fonction est déjà stockée ailleurs, elle ne prend pas de place dans la pile*)
         | _ -> failwith "impossible"
       end
   | AstType.Affectation (a,e) ->
@@ -79,6 +80,27 @@ begin
   AstPlacement.Fonction(info,lp,nb)
 end
 
+let rec analyse_placement_statique_fonction (AstType.Fonction(info,lp,li)) top =
+  let nli,ntop = analyse_placement_statique_bloc li top "SB" in
+  AstType.Fonction(info,lp,nli),ntop
+
+and analyse_placement_statique_bloc li depl reg = match li with
+  | [] -> ([],0)
+  | t::q -> let (ni,ti) = analyse_placement_statique_instruction t depl reg in 
+    let (nq,tq) = analyse_placement_statique_bloc q (depl+ti) reg in (ni::nq,ti+tq)
+
+and analyse_placement_statique_instruction i depl reg =
+  match i with
+  | AstType.Declaration (info, e) ->
+      begin
+       match info_ast_to_info info with
+        | InfoVar ( false,_,_,_,_) -> (i,0)
+        | InfoVar ( true,_,_,_,_) -> modifier_adresse_variable depl reg info; (AstType.Declaration(info,e),1)
+        | _ -> failwith "impossible"
+      end
+  | _ -> (i,0)
+
+
 (* analyser : AstPlacement.programme -> AstPlacement.programme *)
 (* Paramètre : le programme à analyser *)
 (* Vérifie la bonne utilisation des identifiants et transforme le programme
@@ -89,7 +111,8 @@ let analyser (AstType.Programme (varGlobales,fonctions,prog)) =
                                               (appel:: (fst resq), snd resq + snd appel)) 
                               ([],0)
                               varGlobales
-                               in
-  let nf = List.map analyse_placement_fonction fonctions in
+  in
+  let nf1, ntop = List.fold_right (fun f resq -> let nf,ntop = analyse_placement_statique_fonction f (snd resq) in (nf::(fst resq), ntop)) fonctions ([],top) in
+  let nf2 = List.map analyse_placement_fonction nf1 in
   let nb = analyse_placement_bloc prog top "SB" in 
-  AstPlacement.Programme((List.map fst nv, top),nf,nb)
+  AstPlacement.Programme((List.map fst nv, ntop),nf2,nb)
