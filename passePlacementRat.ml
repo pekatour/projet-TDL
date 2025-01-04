@@ -21,7 +21,7 @@ let rec analyse_placement_instruction i depl reg =
   | AstType.Declaration (info, e) ->
       begin
        match info_ast_to_info info with
-        | InfoVar(_,t,_,_) -> modifier_adresse_variable depl reg info;
+        | InfoVar ( _,_,t,_,_) -> modifier_adresse_variable depl reg info;
           (AstPlacement.Declaration(info,e),getTaille t)
         | _ -> failwith "impossible"
       end
@@ -72,7 +72,7 @@ let analyse_placement_fonction (AstType.Fonction(info,lp,li))  =
 begin
   let _ = List.fold_right (fun x resq ->
       match info_ast_to_info x with
-        |InfoVar(_,t,_,_) -> modifier_adresse_variable (resq - getTaille t) "LB" x; (resq - getTaille t)
+        |InfoVar ( _,_,t,_,_) -> modifier_adresse_variable (resq - getTaille t) "LB" x; (resq - getTaille t)
         |_ -> failwith "impossible"
     ) (List.rev lp) 0 in
   let nb = analyse_placement_bloc li 3 "LB" in

@@ -17,7 +17,7 @@ en un affectable de type AstTds.affectable *)
 let rec analyse_type_affectable a  = 
   match a with
   | AstTds.Ident info -> begin match info_ast_to_info info with
-    | InfoVar(_,t,_,_) -> (AstType.Ident info, t)
+    | InfoVar (_,_,t,_,_) -> (AstType.Ident info, t)
     | InfoConst(_,_) -> (AstType.Ident info, Int)
     | _ -> failwith "impossible"
     end
@@ -54,7 +54,7 @@ let rec analyse_type_expression e =
       (AstType.Affectable a, t)
     
     | AstTds.Adresse info -> begin match info_ast_to_info info with
-      | InfoVar(_,t,_,_) -> (AstType.Adresse info, Pointeur(t))
+      | InfoVar (_,_,t,_,_) -> (AstType.Adresse info, Pointeur(t))
       | _ -> failwith "impossible"
     end
     | AstTds.Null -> (AstType.Null, Pointeur(Undefined))

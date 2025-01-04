@@ -19,7 +19,7 @@ let rec analyse_code_affectable a modif =
   | AstType.Ident info -> 
     begin
       match info_ast_to_info info with
-        | InfoVar(_,t,dep,reg) -> (if modif then store else load) (getTaille t) dep reg
+        | InfoVar ( _,_,t,dep,reg) -> (if modif then store else load) (getTaille t) dep reg
         | InfoConst(_,v) -> loadl_int v
         | _ -> failwith "impossible"
     end
@@ -31,7 +31,7 @@ let rec analyse_code_affectable a modif =
     | AstType.Ident info -> 
       begin
         match info_ast_to_info info with
-          | InfoVar(_,t,_,_) -> getTaille t
+          | InfoVar ( _,_,t,_,_) -> getTaille t
           | _ -> failwith "impossible"
       end
     | AstType.Deref _ -> 1
@@ -59,7 +59,7 @@ let rec analyse_code_expression e =
     | AstType.Affectable a -> analyse_code_affectable a false
 
     | AstType.Adresse info -> begin match info_ast_to_info info with
-      | InfoVar(_,_,dep,reg) -> loada dep reg
+      | InfoVar ( _,_,_,dep,reg) -> loada dep reg
       | _ -> failwith "impossible"
     end
     
@@ -106,7 +106,7 @@ and analyse_code_instruction i =
       begin
        let ne = analyse_code_expression e in
         match info_ast_to_info info with
-          | InfoVar(_,t,dep,reg) -> push (getTaille t) ^ ne ^ store (getTaille t) dep reg
+          | InfoVar ( _,_,t,dep,reg) -> push (getTaille t) ^ ne ^ store (getTaille t) dep reg
           | _ -> failwith "impossible"
       end
   | AstPlacement.Affectation (a,e) ->

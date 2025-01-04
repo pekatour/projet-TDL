@@ -59,7 +59,7 @@ main : lfi=prog EOF     {lfi}
 
 prog : lv=var* lf=fonc* ID li=bloc  {Programme (lv,lf,li)}
 
-var : STATIC t=typ n=ID EQUAL e1=e PV {Declaration (t,n,e1)}
+var : STATIC t=typ n=ID EQUAL e1=e PV {Declaration (false,t,n,e1)}
 
 fonc : t=typ n=ID PO lp=separated_list(VIRG,param) PF li=bloc {Fonction(t,n,lp,li)}
 
@@ -68,7 +68,8 @@ param : t=typ n=ID  {(t,n)}
 bloc : AO li=i* AF      {li}
 
 i :
-| t=typ n=ID EQUAL e1=e PV          {Declaration (t,n,e1)}
+| t=typ n=ID EQUAL e1=e PV          {Declaration (false,t,n,e1)}
+| STATIC t=typ n=ID EQUAL e1=e PV   {Declaration (true,t,n,e1)}
 | n=a EQUAL e1=e PV                 {Affectation (n,e1)}
 | CONST n=ID EQUAL e=ENTIER PV      {Constante (n,e)}
 | PRINT e1=e PV                     {Affichage (e1)}

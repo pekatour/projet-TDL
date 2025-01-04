@@ -54,8 +54,8 @@ type expression =
 (* Instructions de Rat *)
 type bloc = instruction list
 and instruction =
-  (* Déclaration de variable représentée par son type, son nom et l'expression d'initialisation *)
-  | Declaration of typ * string * expression
+  (* Déclaration de variable représentée par si elle est statique locale, son type, son nom et l'expression d'initialisation *)
+  | Declaration of bool * typ * string * expression
   (* Affectation d'une variable représentée par son nom et la nouvelle valeur affectée *)
   | Affectation of affectable * expression
   (* Déclaration d'une constante représentée par son nom et sa valeur (entier) *)

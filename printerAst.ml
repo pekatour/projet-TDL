@@ -82,7 +82,7 @@ struct
   (* Conversion des instructions *)
   let rec string_of_instruction i =
     match i with
-    | Declaration (t, n, e) -> "Declaration  : "^(string_of_type t)^" "^n^" = "^(string_of_expression e)^"\n"
+    | Declaration (b, t, n, e) -> "Declaration  : "^ (if b then "static" else "") ^(string_of_type t)^" "^n^" = "^(string_of_expression e)^"\n"
     | Affectation (n,e) ->  "Affectation  : "^string_of_affectable n^" = "^(string_of_expression e)^"\n"
     | Constante (n,i) ->  "Constante  : "^n^" = "^(string_of_int i)^"\n"
     | Affichage e ->  "Affichage  : "^(string_of_expression e)^"\n"

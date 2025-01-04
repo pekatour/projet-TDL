@@ -1,6 +1,6 @@
 open Rat
 open Compilateur
-open Exceptions
+(* open Exceptions *)
 open Passe
 
 

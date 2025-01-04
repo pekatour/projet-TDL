@@ -74,7 +74,7 @@ en une instruction de type AstTds.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
 let rec analyse_tds_instruction tds oia i =
   match i with
-  | AstSyntax.Declaration (t, n, e) ->
+  | AstSyntax.Declaration (b, t, n, e) ->
       begin
         match chercherLocalement tds n with
         | None ->
@@ -84,7 +84,7 @@ let rec analyse_tds_instruction tds oia i =
             (* et obtention de l'expression transformée *)
             let ne = analyse_tds_expression tds e in
             (* Création de l'information associée à l'identfiant *)
-            let info = InfoVar (n,Undefined, 0, "") in
+            let info = InfoVar (b,n,Undefined, 0, "") in
             (* Création du pointeur sur l'information *)
             let ia = info_to_info_ast info in
             (* Ajout de l'information (pointeur) dans la tds *)
@@ -185,7 +185,7 @@ begin
 
       let rec analyser_param lp lpia = match lp with
       | [] -> lpia
-      | (typ,nom)::q -> let infox = InfoVar (nom,Undefined, 0, "") in
+      | (typ,nom)::q -> let infox = InfoVar (  false,nom,Undefined, 0, "") in 
       let iax = info_to_info_ast infox in
         if (List.mem (typ,iax) lpia) then
           raise (DoubleDeclaration nom)
