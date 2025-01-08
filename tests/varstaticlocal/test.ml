@@ -69,8 +69,8 @@ let pathFichiersRat = "../../../../tests/varstaticlocal/fichiersRat/"
 (**********)
 
 let%test "testplacement" = 
- test (pathFichiersRat^"test1.rat")  "f" ("i",1)  (0,"SB")
+ test (pathFichiersRat^"test1.rat")  "f" ("i",1)  (1,"SB")
 
-(* let%expect_test "testTAM" = 
+let%expect_test "testTAM" = 
  runtam (pathFichiersRat^"test1.rat");
- [%expect{| 1234 |}] *)
+ [%expect{| 1234 |}]

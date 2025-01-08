@@ -112,7 +112,7 @@ let analyser (AstType.Programme (varGlobales,fonctions,prog)) =
                               ([],0)
                               varGlobales
   in
-  let nf1, ntop = List.fold_right (fun f resq -> let nf,ntop = analyse_placement_statique_fonction f (snd resq) in (nf::(fst resq), ntop)) fonctions ([],top) in
+  let nf1, ntop = List.fold_right (fun f resq -> let nf,ntop = analyse_placement_statique_fonction f (snd resq) in (nf::(fst resq), ntop + (snd resq))) fonctions ([],top) in
   let nf2 = List.map analyse_placement_fonction nf1 in
-  let nb = analyse_placement_bloc prog top "SB" in 
-  AstPlacement.Programme((List.map fst nv, ntop),nf2,nb)
+  let nprog = analyse_placement_bloc prog ntop "SB" in 
+  AstPlacement.Programme((List.map fst nv, ntop),nf2,nprog,ntop - top)

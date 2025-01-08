@@ -108,7 +108,11 @@ and analyse_code_instruction i =
       begin
        let ne = analyse_code_expression e in
         match info_ast_to_info info with
-          | InfoVar ( _,_,t,dep,reg) -> push (getTaille t) ^ ne ^ store (getTaille t) dep reg
+          | InfoVar ( false,_,t,dep,reg) -> push (getTaille t) ^ ne ^ store (getTaille t) dep reg
+          | InfoVar ( true,_,t,dep,reg) -> let fin = getEtiquette () in 
+            load 1 dep reg ^ loadl_int 0 ^ subr "IEq" ^ jumpif 0 fin ^
+              loadl_int (getTaille t) ^ subr "MAlloc" ^ store 1 dep reg ^ ne ^ load 1 dep reg ^ storei (getTaille t) ^
+            label fin
           | _ -> failwith "impossible"
       end
   | AstPlacement.Affectation (a,e) ->
@@ -156,6 +160,7 @@ and analyse_code_bloc li taille = match li with
       | t::q -> let si = analyse_code_instruction t in 
         let sq = analyse_code_bloc q taille in si ^ sq
 
+(* Analyse du code des déclarations des variables globales *)
 and analyse_code_varglobales li = match li with
       | [] -> ""
       | t::q -> let si = analyse_code_instruction t in 
@@ -165,7 +170,7 @@ and analyse_code_varglobales li = match li with
 let analyse_code_fonction (AstPlacement.Fonction(info,_,(li,taille)))  =
 begin
   (match info_ast_to_info info with
-    | InfoFun(n,_,_) -> label n ^ analyse_code_bloc li taille ^ halt
+    | InfoFun(n,_,_) -> label n ^ analyse_code_bloc li taille ^ halt ^ "\n"
     | _ -> failwith "impossible")
   
 end
@@ -175,9 +180,15 @@ end
 (* Vérifie la bonne utilisation des identifiants et transforme le programme
 en un programme de type string.programme *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let analyser (AstPlacement.Programme (varGlobales,fonctions,prog)) =
+let analyser (AstPlacement.Programme (varGlobales,fonctions,prog,nbVarStaticLocal)) =
+
+  let rec placeStatic taille =
+    if taille > 0 then
+      loadl_int 0 ^ placeStatic (taille-1)
+    else ""
+  in
   let entete = getEntete () in
   let sv = analyse_code_varglobales (fst varGlobales) in
   let sf = List.fold_right (fun x resq -> analyse_code_fonction x ^ resq) fonctions "" in
-  let sb = analyse_code_bloc (fst prog) (snd prog) in sv ^ entete ^ sf ^ label "main" ^ sb ^ pop 0 (snd varGlobales) ^ halt
+  let sb = analyse_code_bloc (fst prog) (snd prog) in sv ^ placeStatic nbVarStaticLocal ^ entete ^ sf ^ label "main" ^ sb ^ pop 0 (snd varGlobales) ^ halt
   

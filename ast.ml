@@ -218,6 +218,7 @@ type bloc = instruction list * int (* taille du bloc *)
 type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
 
 (* Structure d'un programme dans notre langage *)
-type programme = Programme of bloc * fonction list * bloc
+(* L'entier correspond au nombre de variables statiques locales dans toutes les fonctions *)
+type programme = Programme of bloc * fonction list * bloc * int
 
 end

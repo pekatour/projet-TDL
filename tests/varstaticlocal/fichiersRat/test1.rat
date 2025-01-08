@@ -1,3 +1,5 @@
+static int x = 2;
+
 int f () {
   static int i = 0 ;
   i = (i+1);
