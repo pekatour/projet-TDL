@@ -70,8 +70,8 @@ and instruction =
   | Retour of expression
 
 (* Structure des fonctions de Rat *)
-(* type de retour - nom - liste des paramètres (association type et nom) - corps de la fonction *)
-type fonction = Fonction of typ * string * (typ * string) list * bloc
+(* type de retour - nom - liste des paramètres (association type, nom et valeur optionnelle) - corps de la fonction *)
+type fonction = Fonction of typ * string * (typ * string * expression option) list * bloc
 
 (* Structure d'un programme Rat *)
 (* liste de fonction - programme principal *)
@@ -124,7 +124,7 @@ struct
 
   (* Structure des fonctions dans notre langage *)
   (* type de retour - informations associées à l'identificateur (dont son nom) - liste des paramètres (association type et information sur les paramètres) - corps de la fonction *)
-  type fonction = Fonction of typ * Tds.info_ast * (typ * Tds.info_ast ) list * bloc
+  type fonction = Fonction of typ * Tds.info_ast * (typ * Tds.info_ast * (expression option)) list * bloc
 
   (* Structure d'un programme dans notre langage *)
   type programme = Programme of bloc * fonction list * bloc
@@ -180,7 +180,7 @@ type bloc = instruction list
   | Empty (* les nœuds ayant disparus: Const *)
 
 (* informations associées à l'identificateur (dont son nom), liste des paramètres, corps *)
-type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
+type fonction = Fonction of Tds.info_ast * (Tds.info_ast * expression option) list * bloc
 
 (* Structure d'un programme dans notre langage *)
 type programme = Programme of bloc * fonction list * bloc
@@ -215,7 +215,7 @@ type bloc = instruction list * int (* taille du bloc *)
 
 (* informations associées à l'identificateur (dont son nom), liste de paramètres, corps, expression de retour *)
 (* Plus besoin de la liste des paramètres mais on la garde pour les tests du placements mémoire *)
-type fonction = Fonction of Tds.info_ast * Tds.info_ast list * bloc
+type fonction = Fonction of Tds.info_ast * (Tds.info_ast * expression option) list * bloc
 
 (* Structure d'un programme dans notre langage *)
 (* L'entier correspond au nombre de variables statiques locales dans toutes les fonctions *)

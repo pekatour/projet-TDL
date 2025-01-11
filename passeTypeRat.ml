@@ -38,16 +38,25 @@ let rec analyse_type_expression e =
     | AstTds.AppelFonction(info,le) ->
       begin
         match info_ast_to_info info with
-          | InfoFun(_,tr,tp) -> let l = List.map analyse_type_expression le in
+          | InfoFun(_,tr,tp,nb) ->
+            let l = List.map analyse_type_expression le in
 
-            (*tp est dans le mauvais sens (??), on le retourne*)
+            (*tp est dans le mauvais sens, on le retourne*)
             let tp2 = List.rev tp in
 
             let np = List.map fst l in
             let ntp = List.map snd l in
-            if est_compatible_list tp2 ntp then
+
+            let rec n_premiers_elements n lst =
+              match lst, n with
+              | [], _ -> []
+              | _, n when n <= 0 -> []
+              | x :: xs, n -> x :: n_premiers_elements (n - 1) xs
+            in 
+
+            if est_compatible_list (n_premiers_elements (List.length ntp) tp2) ntp && nb <= List.length le then
               (AstType.AppelFonction(info,np),tr)
-            else raise (TypesParametresInattendus(tp2,ntp))
+            else raise (TypesParametresInattendus(ntp,tp2))
           | _ -> failwith "impossible"
       end 
     | AstTds.Affectable a -> let (a, t) = (analyse_type_affectable a) in
@@ -146,7 +155,7 @@ let rec analyse_type_instruction i =
       begin
       let ne,te = analyse_type_expression e in
         match info_ast_to_info ia with
-          | InfoFun(_,t,_) -> if est_compatible t te then
+          | InfoFun(_,t,_,_) -> if est_compatible t te then
             AstType.Retour (ne,ia)
             else raise (TypeInattendu(te,t))
           | _ -> failwith "impossible"
@@ -162,11 +171,17 @@ and analyse_type_bloc li =
 (* analyse_type_fonction : type -> AstTds.fonction -> AstType.fonction *)
 let analyse_type_fonction (AstTds.Fonction(t,info,lp,li))  =
 begin
-  modifier_type_fonction t (List.map fst lp) info;
-  let info_types = List.map ( fun (t,i) ->
-    modifier_type_variable t i; i
+  modifier_type_fonction t (List.map (fun (t,_,_) -> t) lp) info;
+  let info_types = List.map ( fun (t,i,v) ->
+    modifier_type_variable t i; match v with
+    | None -> (i,None)
+    | Some e -> let (ne,te) = analyse_type_expression e in
+      if est_compatible te t then
+        (i,Some ne)
+      else
+        raise (TypeInattendu(te,t))
   ) lp in
-  AstType.Fonction(info,info_types, List.map analyse_type_instruction li)
+  AstType.Fonction(info,info_types, analyse_type_bloc li)
 end
 
 (* analyser : AstType.programme -> AstType.programme *)

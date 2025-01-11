@@ -5,7 +5,7 @@ open Type
 type info =
   | InfoConst of string * int
   | InfoVar of bool * string * typ * int * string
-  | InfoFun of string * typ * typ list
+  | InfoFun of string * typ * typ list * int 
 
 (* Données stockées dans la tds  et dans les AST : pointeur sur une information *)
 type info_ast = info ref  
@@ -285,14 +285,14 @@ let string_of_info info =
   match info with
   | InfoConst (n,value) -> "Constante "^n^" : "^(string_of_int value)
   | InfoVar (_,n,t,dep,base) -> "Variable "^n^" : "^(string_of_type t)^" "^(string_of_int dep)^"["^base^"]"
-  | InfoFun (n,t,tp) -> "Fonction "^n^" : "^(List.fold_right (fun elt tq -> if tq = "" then (string_of_type elt) else (string_of_type elt)^" * "^tq) tp "" )^
+  | InfoFun (n,t,tp,_) -> "Fonction "^n^" : "^(List.fold_right (fun elt tq -> if tq = "" then (string_of_type elt) else (string_of_type elt)^" * "^tq) tp "" )^
                       " -> "^(string_of_type t)
 
 (* Affiche la tds locale *)
 let afficher_locale tds =
   match tds with
   | Nulle -> print_newline ()
-  |Courante (_,c) -> Hashtbl.iter ( fun n info -> (print_string (n^" : "^(string_of_info (info_ast_to_info info))^"\n"))) c
+  | Courante (_,c) -> Hashtbl.iter ( fun n info -> (print_string (n^" : "^(string_of_info (info_ast_to_info info))^"\n"))) c
 
 (* Affiche la tds locale et récursivement *)
 let afficher_globale tds =
@@ -321,21 +321,28 @@ let%test _ =
 (* Modifie les types de retour et des paramètres si c'est une InfoFun, ne fait rien sinon *)
 let modifier_type_fonction t tp i =
        match !i with
-       | InfoFun(n,_,_) -> i:= InfoFun(n,t,tp)
+       | InfoFun(n,_,_,nb) -> i:= InfoFun(n,t,tp,nb)
        | _ -> failwith "Appel modifier_type_fonction pas sur un InfoFun"
 
+(* Incrementer le nb de param "normaux" *)
+let incrementer_nb_param_normaux i =
+  match !i with
+    | InfoFun (a,b,c,d) -> i:= InfoFun (a,b,c,d+1)
+    | _ -> failwith "Appel incrementer_nb_param_normaux pas sur un InfoFun"
+
+
 let%test _ = 
-  let info = InfoFun ("f", Undefined, []) in
+  let info = InfoFun ("f", Undefined, [], 0) in
   let ia = info_to_info_ast info in
   modifier_type_fonction Rat [Int ; Int] ia;
   match info_ast_to_info ia with
-  | InfoFun ("f", Rat, [Int ; Int]) -> true
+  | InfoFun ("f", Rat, [Int ; Int], 0) -> true
   | _ -> false
  
 (* Modifie l'emplacement (dépl, registre) si c'est une InfoVar, ne fait rien sinon *)
  let modifier_adresse_variable d b i =
      match !i with
-     |InfoVar (boo,n,t,_,_) -> i:= InfoVar (boo,n,t,d,b)
+     | InfoVar (boo,n,t,_,_) -> i:= InfoVar (boo,n,t,d,b)
      | _ -> failwith "Appel modifier_adresse_variable pas sur un InfoVar"
 
 let%test _ = 

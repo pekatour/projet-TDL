@@ -1,0 +1,6 @@
+int f (int b, int a = false) {
+  return a;
+}
+
+main {
+}

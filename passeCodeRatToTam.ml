@@ -52,11 +52,19 @@ en une expression de type AstType.expression *)
 let rec analyse_code_expression e =
   match e with
     | AstType.AppelFonction(info,le) ->
+      let taille_n_derniers_elements n lst =
+        List.fold_right (fun t (somme, compte) ->
+          if compte < n then (getTaille t + somme, compte + 1) else (somme, compte)
+        ) lst (0, 0)
+        in
+        
       begin
-        List.fold_right (fun x resq -> analyse_code_expression x ^ resq) le ""
-        ^ call "SB" (match info_ast_to_info info with
-          | InfoFun(n,_,_) -> n
-          | _ -> failwith "impossible")
+        match info_ast_to_info info with
+          | InfoFun(n,_,ltp,nb) -> List.fold_right (fun x resq -> analyse_code_expression x ^ resq) le "" ^
+            push (fst (taille_n_derniers_elements (List.length ltp - List.length le) ltp)) ^
+            loadl_int (List.length le - nb) ^
+            call "SB" n
+          | _ -> failwith "impossible"
       end 
     | AstType.Affectable a -> analyse_code_affectable a false
 
@@ -149,7 +157,7 @@ and analyse_code_instruction i =
   | AstPlacement.Retour (e, tailleRet, tailleParam) -> 
     begin
       let se = analyse_code_expression e in
-      se ^ return tailleRet tailleParam
+      se ^ return tailleRet (tailleParam+1)
      end
   | AstPlacement.Empty -> ""
 
@@ -167,10 +175,41 @@ and analyse_code_varglobales li = match li with
         let sq = analyse_code_varglobales q in si ^ sq
   
 (* analyse_code_fonction : type -> AstPlacement.fonction -> string.fonction *)
-let analyse_code_fonction (AstPlacement.Fonction(info,_,(li,taille)))  =
+let analyse_code_fonction (AstPlacement.Fonction(info,lp,(li,taille)))  =
 begin
+
+  (* Renvoie le code de remplissage de la pile et les etiquettes de chaque paramètre par défaut (qui sont dans le code renvoyé) *)
+  let rec code_etiquettes_param lst =
+    match lst with
+      | [] -> ("",[])
+      |(i,v)::q -> 
+        match v with
+          | None -> code_etiquettes_param q
+          | Some e ->
+            match info_ast_to_info i with
+            | InfoVar( _,_, t, dep , reg) ->
+              let ne = analyse_code_expression e in
+              let etiq = getEtiquette() in
+              let resq = code_etiquettes_param q in
+              ((fst resq) ^ label etiq ^ ne ^ store (getTaille t) dep reg ,(snd resq) @ [etiq])
+            | _ -> failwith "impossible"
+  in
+
+  let rec jump_param letiq compte =
+    match letiq with
+      | [] -> ""
+      | etiq::q -> load 1 3 "LB" ^ loadl_int compte ^ subr "INeq" ^ jumpif 0 etiq ^ jump_param q (compte + 1)
+  in
   (match info_ast_to_info info with
-    | InfoFun(n,_,_) -> label n ^ analyse_code_bloc li taille ^ halt ^ "\n"
+    | InfoFun(n,_,_,_) -> label n ^
+      (*Recuperer le nombre de paramètres par défaut renseignés*)
+      load 1 (-1) "LB" ^
+      (let (code_load, letiq) = code_etiquettes_param lp in 
+      let code_jump = jump_param letiq 0 in 
+      let label_end = getEtiquette() in 
+      code_jump ^ jump label_end ^ code_load ^ label label_end) ^
+      
+      analyse_code_bloc li taille ^ halt ^ "\n"
     | _ -> failwith "impossible")
   
 end

@@ -47,7 +47,7 @@ open Ast.AstSyntax
 %type <fonction> fonc
 %type <instruction> i
 %type <typ> typ
-%type <typ*string> param
+%type <typ*string*(expression option)> param
 %type <expression> e 
 
 (* Type et définition de l'axiome *)
@@ -63,7 +63,9 @@ var : STATIC t=typ n=ID EQUAL e1=e PV {Declaration (false,t,n,e1)}
 
 fonc : t=typ n=ID PO lp=separated_list(VIRG,param) PF li=bloc {Fonction(t,n,lp,li)}
 
-param : t=typ n=ID  {(t,n)}
+param : t=typ n=ID v=option(default) {(t,n,v)}
+
+default : EQUAL e1=e {e1}
 
 bloc : AO li=i* AF      {li}
 

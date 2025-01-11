@@ -1,0 +1,7 @@
+int f (int b, int a = 0) {
+  return a;
+}
+
+main {
+  print(f());
+}

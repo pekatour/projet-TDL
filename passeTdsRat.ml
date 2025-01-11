@@ -39,7 +39,7 @@ let rec analyse_tds_expression tds e =
     | AstSyntax.AppelFonction(id,le) -> begin match chercherGlobalement tds id with
       | None -> raise (IdentifiantNonDeclare id)
       | Some info -> begin match info_ast_to_info info with
-        | InfoFun _ -> AstTds.AppelFonction (info, List.map (analyse_tds_expression tds) le)
+        | InfoFun (_,_,_,_) -> AstTds.AppelFonction (info, List.map (analyse_tds_expression tds) le)
         | _ -> raise (MauvaiseUtilisationIdentifiant id) end end
 
     | AstSyntax.Affectable a -> AstTds.Affectable (analyse_tds_affectable tds a false)
@@ -178,20 +178,28 @@ let analyse_tds_fonction maintds (AstSyntax.Fonction(t,n,lp,li))  =
 begin
   match chercherLocalement maintds n with
     | Some _ -> raise (DoubleDeclaration n)
-    | None -> let info = InfoFun (n,Undefined, []) in
+    | None -> let info = InfoFun (n,Undefined, [], 0) in
       let ia = info_to_info_ast info in
       ajouter maintds n ia; 
       let tdsfille = creerTDSFille maintds in
 
-      let rec analyser_param lp lpia = match lp with
+      let rec analyser_param lp lpia wasNone = match lp with
       | [] -> lpia
-      | (typ,nom)::q -> let infox = InfoVar (  false,nom,Undefined, 0, "") in 
-      let iax = info_to_info_ast infox in
-        if (List.mem (typ,iax) lpia) then
-          raise (DoubleDeclaration nom)
-        else ajouter tdsfille nom iax; analyser_param q ((typ,iax)::lpia) in
+      | (typ,nom,valeur)::q -> let infox = InfoVar (  false,nom,Undefined, 0, "") in
+      let ne = (match valeur with
+          | None -> incrementer_nb_param_normaux ia; if wasNone then None
+          else raise (ArgumentParDefautMalOrdonne nom)
+          | Some e -> Some (analyse_tds_expression tdsfille e)) in
+        let iax = info_to_info_ast infox in
+          if (List.mem (typ,iax,ne) lpia) then
+            raise (DoubleDeclaration nom)
+          else
+            ajouter tdsfille nom iax; analyser_param q ((typ,iax,ne)::lpia) (match ne with
+                                                                              | None -> true
+                                                                              | Some _ -> false) 
+      in
       
-      let lpia = analyser_param lp [] in
+      let lpia = analyser_param lp [] true in
       AstTds.Fonction(t, ia, lpia, analyse_tds_bloc tdsfille (Some ia) li)
 end
 
