@@ -73,7 +73,7 @@ let analyse_placement_fonction (AstType.Fonction(info,lp,li))  =
 begin
   let _ = List.fold_right (fun x resq ->
       match info_ast_to_info x with
-        |InfoVar ( _,_,t,_,_) -> modifier_adresse_variable (resq - getTaille t - 1) "LB" x; (resq - getTaille t)
+        |InfoVar ( _,_,t,_,_) -> modifier_adresse_variable (resq - getTaille t) "LB" x; (resq - getTaille t)
         |_ -> failwith "impossible"
     ) (List.rev (List.map fst lp)) 0 in
   let nb = analyse_placement_bloc li 3 "LB" in

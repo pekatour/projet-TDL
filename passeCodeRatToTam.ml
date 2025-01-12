@@ -14,19 +14,19 @@ type t2 = string
 (* Vérifie la bonne utilisation des identifiants et transforme l'affectable
 en un affectable de type AstTds.affectable *)
 (* Erreur si mauvaise utilisation des identifiants *)
-let rec analyse_code_affectable a modif = 
+let rec analyse_code_affectable a modif infonction = 
   match a with
   | AstType.Ident info -> 
     begin
       match info_ast_to_info info with
-        | InfoVar ( false,_,t,dep,reg) -> (if modif then store else load) (getTaille t) dep reg
+        | InfoVar ( false,_,t,dep,reg) -> (if modif then store else load) (getTaille t) (if infonction && dep < 0 then dep-1 else dep) reg
         | InfoVar ( true,_,t,dep,reg) -> load 1 dep reg ^ (if modif then storei else loadi) (getTaille t)
         | InfoConst(_,v) -> loadl_int v
         | _ -> failwith "impossible"
     end
   | AstType.Deref a2 ->
     (* On veut dorénavant load les "sous-objets" et plus store, si on était du côté gauche d'une affectation *)
-    let sa2 = analyse_code_affectable a2 false in
+    let sa2 = analyse_code_affectable a2 false infonction in
     let taille =
     match a2 with
     | AstType.Ident info -> 
@@ -49,7 +49,7 @@ en une expression de type AstType.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 
 
-let rec analyse_code_expression e =
+let rec analyse_code_expression e infonction =
   match e with
     | AstType.AppelFonction(info,le) ->
       let taille_n_derniers_elements n lst =
@@ -60,13 +60,13 @@ let rec analyse_code_expression e =
         
       begin
         match info_ast_to_info info with
-          | InfoFun(n,_,ltp,nb) -> List.fold_right (fun x resq -> analyse_code_expression x ^ resq) le "" ^
+          | InfoFun(n,_,ltp,nb) -> List.fold_right (fun x resq -> analyse_code_expression x infonction ^ resq) le "" ^
             push (fst (taille_n_derniers_elements (List.length ltp - List.length le) ltp)) ^
             loadl_int (List.length le - nb) ^
             call "SB" n
           | _ -> failwith "impossible"
       end 
-    | AstType.Affectable a -> analyse_code_affectable a false
+    | AstType.Affectable a -> analyse_code_affectable a false infonction
 
     | AstType.Adresse info -> begin match info_ast_to_info info with
       | InfoVar ( _,_,_,dep,reg) -> loada dep reg
@@ -77,8 +77,8 @@ let rec analyse_code_expression e =
 
     | AstType.Null -> subr "MVoid"
 
-    | AstType.Binaire (b,e1,e2) -> let s1 = analyse_code_expression e1 in
-      let s2 = analyse_code_expression e2 in s1 ^ s2 ^
+    | AstType.Binaire (b,e1,e2) -> let s1 = analyse_code_expression e1 infonction in
+      let s2 = analyse_code_expression e2 infonction in s1 ^ s2 ^
       begin
         match b with (* -------------------- On a mis SB, on est pas sûrs ----------------------------- *)
           | Fraction -> call "SB" "norm"
@@ -91,7 +91,7 @@ let rec analyse_code_expression e =
           | Inf      -> subr "ILss"
       end
     | AstType.Unaire (op,e) -> 
-      let ne = analyse_code_expression e in
+      let ne = analyse_code_expression e infonction in
       begin
         match op with
           | Numerateur -> ne ^ pop 0 1
@@ -110,11 +110,11 @@ let rec analyse_code_expression e =
 (* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
 en une instruction de type string.instruction *)
 (* Erreur si mauvaise utilisation des identifiants *)
-and analyse_code_instruction i =
+and analyse_code_instruction i infonction =
   match i with
   | AstPlacement.Declaration (info, e) ->
       begin
-       let ne = analyse_code_expression e in
+       let ne = analyse_code_expression e infonction in
         match info_ast_to_info info with
           | InfoVar ( false,_,t,dep,reg) -> push (getTaille t) ^ ne ^ store (getTaille t) dep reg
           | InfoVar ( true,_,t,dep,reg) -> let fin = getEtiquette () in 
@@ -124,54 +124,54 @@ and analyse_code_instruction i =
           | _ -> failwith "impossible"
       end
   | AstPlacement.Affectation (a,e) ->
-      let ne = analyse_code_expression e in
-      let na = analyse_code_affectable a true in
+      let ne = analyse_code_expression e infonction in
+      let na = analyse_code_affectable a true infonction in
       ne ^ na
   | AstPlacement.AffichageInt e ->
     begin
-      let ne = analyse_code_expression e in ne ^ subr "IOut"
+      let ne = analyse_code_expression e infonction in ne ^ subr "IOut"
     end
   | AstPlacement.AffichageRat e ->
     begin
-      let ne = analyse_code_expression e in ne ^ call "SB" "rout"
+      let ne = analyse_code_expression e infonction in ne ^ call "SB" "rout"
 
     end
   | AstPlacement.AffichageBool e ->
     begin
-      let ne = analyse_code_expression e in ne ^ subr "BOut"
+      let ne = analyse_code_expression e infonction in ne ^ subr "BOut"
     end
   | AstPlacement.Conditionnelle (c,t,e) ->
-      let sc = analyse_code_expression c in
-      let st = analyse_code_bloc (fst t) (snd t) in
-      let se = analyse_code_bloc (fst e) (snd e) in
+      let sc = analyse_code_expression c infonction in
+      let st = analyse_code_bloc (fst t) (snd t) infonction in
+      let se = analyse_code_bloc (fst e) (snd e) infonction in
       let debutElse = getEtiquette () in
       let fin = getEtiquette () in
       sc ^ jumpif 0 debutElse ^ st ^ jump fin ^ label debutElse ^ se ^ label fin
 
   | AstPlacement.TantQue (c,b) ->
-    let nc = analyse_code_expression c in
-    let nb = analyse_code_bloc (fst b) (snd b) in
+    let nc = analyse_code_expression c infonction in
+    let nb = analyse_code_bloc (fst b) (snd b) infonction in
     let debut = getEtiquette () in let fin = getEtiquette () in
     label debut ^ nc ^ jumpif 0 fin ^ nb ^ jump debut ^ label fin 
 
   | AstPlacement.Retour (e, tailleRet, tailleParam) -> 
     begin
-      let se = analyse_code_expression e in
+      let se = analyse_code_expression e infonction in
       se ^ return tailleRet (tailleParam+1)
      end
   | AstPlacement.Empty -> ""
 
 
 (* analyse_code_bloc : type -> info_ast option -> AstPlacement.bloc -> string.bloc *)
-and analyse_code_bloc li taille = match li with
+and analyse_code_bloc li taille infonction = match li with
       | [] -> pop 0 taille
-      | t::q -> let si = analyse_code_instruction t in 
-        let sq = analyse_code_bloc q taille in si ^ sq
+      | t::q -> let si = analyse_code_instruction t infonction in 
+        let sq = analyse_code_bloc q taille infonction in si ^ sq
 
 (* Analyse du code des déclarations des variables globales *)
 and analyse_code_varglobales li = match li with
       | [] -> ""
-      | t::q -> let si = analyse_code_instruction t in 
+      | t::q -> let si = analyse_code_instruction t false in 
         let sq = analyse_code_varglobales q in si ^ sq
   
 (* analyse_code_fonction : type -> AstPlacement.fonction -> string.fonction *)
@@ -188,10 +188,10 @@ begin
           | Some e ->
             match info_ast_to_info i with
             | InfoVar( _,_, t, dep , reg) ->
-              let ne = analyse_code_expression e in
+              let ne = analyse_code_expression e false in
               let etiq = getEtiquette() in
               let resq = code_etiquettes_param q in
-              ((fst resq) ^ label etiq ^ ne ^ store (getTaille t) dep reg ,(snd resq) @ [etiq])
+              ((fst resq) ^ label etiq ^ ne ^ store (getTaille t) (dep -1) reg ,(snd resq) @ [etiq])
             | _ -> failwith "impossible"
   in
 
@@ -209,7 +209,7 @@ begin
       let label_end = getEtiquette() in 
       code_jump ^ jump label_end ^ code_load ^ label label_end) ^
       
-      analyse_code_bloc li taille ^ halt ^ "\n"
+      analyse_code_bloc li taille true ^ halt ^ "\n"
     | _ -> failwith "impossible")
   
 end
@@ -229,5 +229,5 @@ let analyser (AstPlacement.Programme (varGlobales,fonctions,prog,nbVarStaticLoca
   let entete = getEntete () in
   let sv = analyse_code_varglobales (fst varGlobales) in
   let sf = List.fold_right (fun x resq -> analyse_code_fonction x ^ resq) fonctions "" in
-  let sb = analyse_code_bloc (fst prog) (snd prog) in sv ^ placeStatic nbVarStaticLocal ^ entete ^ sf ^ label "main" ^ sb ^ pop 0 (snd varGlobales) ^ halt
+  let sb = analyse_code_bloc (fst prog) (snd prog) false in sv ^ placeStatic nbVarStaticLocal ^ entete ^ sf ^ label "main" ^ sb ^ pop 0 (snd varGlobales) ^ halt
   
