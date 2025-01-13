@@ -1,7 +1,7 @@
 open Rat
-open Type
+(* open Type *)
 open Compilateur
-open Exceptions
+(* open Exceptions *)
 open Passe
 
 

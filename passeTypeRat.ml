@@ -1,4 +1,4 @@
-(* Module de la passe de gestion des identifiants *)
+(* Module de la passe de gestion des types *)
 (* doit être conforme à l'interface Passe *)
 open Type
 open Tds
@@ -9,11 +9,11 @@ type t1 = Ast.AstTds.programme
 type t2 = Ast.AstType.programme
 
 
-(* analyse_tds_affectable : tds -> AstSyntax.affectable -> AstTds.affectable *)
+(* analyse_tds_affectable : AstTds.affectable -> AstType.affectable *)
 (* Paramètre a : l'affectable à analyser *)
-(* Vérifie la bonne utilisation des identifiants et transforme l'affectable
-en un affectable de type AstTds.affectable *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* Vérifie la cohérence des types et transforme l'affectable
+en un affectable de type AstType.affectable *)
+(* Erreur si mauvaise utilisation des types *)
 let rec analyse_type_affectable a  = 
   match a with
   | AstTds.Ident info -> begin match info_ast_to_info info with
@@ -26,26 +26,23 @@ let rec analyse_type_affectable a  =
     | (_,t)-> raise (TypePointeurAttendu(t))
 
 
-(* analyse_type_expression : type -> AstTds.expression -> AstType.expression *)
-(* Paramètre type : la table des symboles courante *)
+(* analyse_type_expression : AstTds.expression -> AstType.expression *)
 (* Paramètre e : l'expression à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'expression
-en une expression de type AstType.expression *)
-(* Erreur si mauvaise utilisation des identifiants *)
-
+(* Vérifie la cohérence des types et transforme l'expression
+en un affectable de type AstType.expression *)
+(* Erreur si mauvaise utilisation des types *)
 let rec analyse_type_expression e =
   match e with
     | AstTds.AppelFonction(info,le) ->
       begin
         match info_ast_to_info info with
-          | InfoFun(_,tr,tp,nb) ->
+          | InfoFun(_,ftr,ftp,nbNonDefault) ->
             let l = List.map analyse_type_expression le in
-
-            (*tp est dans le mauvais sens, on le retourne*)
-            let tp2 = List.rev tp in
-
             let np = List.map fst l in
             let ntp = List.map snd l in
+
+            (*ftp est dans le mauvais sens, on le retourne*)
+            let ftp2 = List.rev ftp in            
 
             let rec n_premiers_elements n lst =
               match lst, n with
@@ -53,10 +50,15 @@ let rec analyse_type_expression e =
               | _, n when n <= 0 -> []
               | x :: xs, n -> x :: n_premiers_elements (n - 1) xs
             in 
+            
+            (* Tronquer la liste des paramètres de la fonction pour qu'elle soit de même longueur que celle de l'appel*)
+            let ftp_tronque = (n_premiers_elements (List.length ntp) ftp2) in 
 
-            if est_compatible_list (n_premiers_elements (List.length ntp) tp2) ntp && nb <= List.length le then
-              (AstType.AppelFonction(info,np),tr)
-            else raise (TypesParametresInattendus(ntp,tp2))
+            (* Vérifier que les arguments de l'appel soient compatibles avec ceux de la fonction
+              et que on a mis assez de paramètres pour que l'appel soit valide *)
+            if est_compatible_list ftp_tronque ntp && nbNonDefault <= List.length le then
+              (AstType.AppelFonction(info,np),ftr)
+            else raise (TypesParametresInattendus(ntp,ftp2))
           | _ -> failwith "impossible"
       end 
     | AstTds.Affectable a -> let (a, t) = (analyse_type_affectable a) in
@@ -100,14 +102,11 @@ let rec analyse_type_expression e =
   
 
 
-(* analyse_type_instruction : type -> info_ast option -> AstTds.instruction -> AstType.instruction *)
-(* Paramètre type : la table des symboles courante *)
-(* Paramètre oia : None si l'instruction i est dans le bloc principal,
-    Some ia où ia est l'information associée à la fonction dans laquelle est l'instruction i sinon *)
+(* analyse_type_instruction : AstTds.instruction -> AstType.instruction *)
 (* Paramètre i : l'instruction à analyser *)
-(* Vérifie la bonne utilisation des identifiants et tranforme l'instruction
-en une instruction de type AstType.instruction *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* Vérifie la cohérence des types et transforme l'instruction
+en un affectable de type AstType.instruction *)
+(* Erreur si mauvaise utilisation des types *)
 let rec analyse_type_instruction i =
   match i with
   | AstTds.Declaration (t, info, e) ->
@@ -163,32 +162,38 @@ let rec analyse_type_instruction i =
   | AstTds.Empty -> AstType.Empty
 
 
-(* analyse_type_bloc : type -> info_ast option -> AstTds.bloc -> AstType.bloc *)
+(* analyse_type_bloc : AstTds.bloc -> AstType.bloc *)
 and analyse_type_bloc li =
   List.map analyse_type_instruction li
   
 
-(* analyse_type_fonction : type -> AstTds.fonction -> AstType.fonction *)
+(* analyse_type_fonction : AstTds.fonction -> AstType.fonction *)
+(* Vérifie la cohérence des types et transforme la fonction
+en un affectable de type AstType.fonction *)
+(* Erreur si mauvaise utilisation des types *)
 let analyse_type_fonction (AstTds.Fonction(t,info,lp,li))  =
 begin
   modifier_type_fonction t (List.map (fun (t,_,_) -> t) lp) info;
+
+  (*Vérification des types des expressions contenues dans les paramètres par défaut*)
   let info_types = List.map ( fun (t,i,v) ->
-    modifier_type_variable t i; match v with
-    | None -> (i,None)
-    | Some e -> let (ne,te) = analyse_type_expression e in
-      if est_compatible te t then
-        (i,Some ne)
-      else
-        raise (TypeInattendu(te,t))
+    modifier_type_variable t i;
+    match v with
+      | None -> (i,None)
+      | Some e -> let (ne,te) = analyse_type_expression e in
+        if est_compatible te t then
+          (i,Some ne)
+        else
+          raise (TypeInattendu(te,t))
   ) lp in
   AstType.Fonction(info,info_types, analyse_type_bloc li)
 end
 
 (* analyser : AstType.programme -> AstType.programme *)
 (* Paramètre : le programme à analyser *)
-(* Vérifie la bonne utilisation des identifiants et transforme le programme
-en un programme de type AstType.programme *)
-(* Erreur si mauvaise utilisation des identifiants *)
+(* Vérifie la cohérence des types et transforme le programme
+en un affectable de type AstType.programme *)
+(* Erreur si mauvaise utilisation des types *)
 let analyser (AstTds.Programme (varGlobales,fonctions,prog)) =
   let nv = List.map analyse_type_instruction varGlobales in
   let nf = List.map analyse_type_fonction fonctions in
