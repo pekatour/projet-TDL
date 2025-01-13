@@ -68,11 +68,11 @@ let analyse_placement_fonction (AstType.Fonction(info,lp,li))  =
 begin
   (* Cette ligne ne renvoie rien d'intéressant mais on a quand même besoin d'un fold_right pour les appels récursifs *)
   (* Placement des arguments de la fonction à des adresses négatives de LB *)
-  let _ = List.fold_right (fun x resq ->
+  let _ = List.fold_left (fun resq x ->
       match info_ast_to_info x with
         | InfoVar ( _,_,t,_,_) -> modifier_adresse_variable (resq - getTaille t) "LB" x; (resq - getTaille t)
         | _ -> failwith "impossible"
-    ) (List.rev (List.map fst lp)) 0 in
+    ) 0 ((List.map fst lp))  in
 
   (* Placement des variables du bloc de la fonction*)
   let nb = analyse_placement_bloc li 3 "LB" in
