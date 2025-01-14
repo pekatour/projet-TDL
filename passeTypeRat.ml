@@ -76,15 +76,15 @@ let rec analyse_type_expression e =
       let (ne2,te2) = analyse_type_expression e2 in
       begin
         match te1,b,te2 with
-        | Int,Plus,Int -> (AstType.Binaire(PlusInt,ne1,ne2),Int)
+        | Int,Plus,Int     -> (AstType.Binaire(PlusInt,ne1,ne2),Int)
         | Int,Fraction,Int -> (AstType.Binaire(Fraction,ne1,ne2),Rat)
-        | Rat,Plus,Rat -> (AstType.Binaire(PlusRat,ne1,ne2),Rat)
-        | Int,Mult,Int -> (AstType.Binaire(MultInt,ne1,ne2),Int)
-        | Rat,Mult,Rat -> (AstType.Binaire(MultRat,ne1,ne2),Rat)
-        | Int,Equ,Int -> (AstType.Binaire(EquInt,ne1,ne2),Bool)
-        | Bool,Equ,Bool -> (AstType.Binaire(EquBool,ne1,ne2),Bool)
-        | Int,Inf,Int -> (AstType.Binaire(Inf,ne1,ne2),Bool)
-        | _ -> raise (TypeBinaireInattendu(b,te1,te2))
+        | Rat,Plus,Rat     -> (AstType.Binaire(PlusRat,ne1,ne2),Rat)
+        | Int,Mult,Int     -> (AstType.Binaire(MultInt,ne1,ne2),Int)
+        | Rat,Mult,Rat     -> (AstType.Binaire(MultRat,ne1,ne2),Rat)
+        | Int,Equ,Int      -> (AstType.Binaire(EquInt,ne1,ne2),Bool)
+        | Bool,Equ,Bool    -> (AstType.Binaire(EquBool,ne1,ne2),Bool)
+        | Int,Inf,Int      -> (AstType.Binaire(Inf,ne1,ne2),Bool)
+        | _                -> raise (TypeBinaireInattendu(b,te1,te2))
       end
 
     | AstTds.Unaire (op,e) -> 
@@ -92,7 +92,7 @@ let rec analyse_type_expression e =
       if (est_compatible t Rat) then
         begin
           match op with
-          | Numerateur -> (AstType.Unaire(Numerateur,ne),Int)
+          | Numerateur   -> (AstType.Unaire(Numerateur,ne),Int)
           | Denominateur -> (AstType.Unaire(Denominateur,ne),Int)
         end
       else
