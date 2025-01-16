@@ -63,9 +63,9 @@ var : STATIC t=typ n=ID EQUAL e1=e PV {Declaration (false,t,n,e1)}
 
 fonc : t=typ n=ID PO lp=separated_list(VIRG,param) PF li=bloc {Fonction(t,n,lp,li)}
 
-param : t=typ n=ID v=option(default) {(t,n,v)}
+param : t=typ n=ID v=option(default_value) {(t,n,v)}
 
-default : EQUAL e1=e {e1}
+default_value : EQUAL e1=e {e1}
 
 bloc : AO li=i* AF      {li}
 

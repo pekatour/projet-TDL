@@ -47,10 +47,10 @@ let rec analyse_code_affectable a modif =
 en une expression de type AstType.expression *)
 (* Erreur si mauvaise utilisation des identifiants *)
 
-
 let rec analyse_code_expression e =
   match e with
     | AstType.AppelFonction(info,le) ->
+      (* Prend un entier et une liste de types et renvoie la somme des tailles des n derniers types de la liste*)
       let taille_n_derniers_elements n lst =
         List.fold_right (fun t (somme, compte) ->
           if compte < n then (getTaille t + somme, compte + 1) else (somme, compte)
@@ -59,7 +59,9 @@ let rec analyse_code_expression e =
         
       begin
         match info_ast_to_info info with
-          | InfoFun(n,_,ltp,nb) -> List.fold_right (fun x resq -> analyse_code_expression x ^ resq) le "" ^
+          | InfoFun(n,_,ltp,nb) -> (* On charge d'abord les arguments fournis dans l'appel, puis on fait de la place
+          pour les arguments manquants, et enfin on charge l'argument implicite*)
+            List.fold_right (fun x resq -> analyse_code_expression x ^ resq) le "" ^
             push (fst (taille_n_derniers_elements (List.length ltp - List.length le) ltp)) ^
             loadl_int (List.length le - nb) ^
             call "SB" n
@@ -79,7 +81,7 @@ let rec analyse_code_expression e =
     | AstType.Binaire (b,e1,e2) -> let s1 = analyse_code_expression e1 in
       let s2 = analyse_code_expression e2 in s1 ^ s2 ^
       begin
-        match b with (* -------------------- On a mis SB, on est pas sûrs ----------------------------- *)
+        match b with
           | Fraction -> call "SB" "norm"
           | PlusInt  -> subr "IAdd"
           | PlusRat  -> call "SB" "radd"
@@ -191,6 +193,7 @@ begin
               let etiq = getEtiquette() in
               let resq = code_etiquettes_param q in
               ((fst resq) ^ label etiq ^ ne ^ store (getTaille t) (dep -1) reg ,(snd resq) @ [etiq])
+              (*dep -1, car ajout du paramètre implicite*)
             | _ -> failwith "impossible"
   in
 
